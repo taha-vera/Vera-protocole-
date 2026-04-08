@@ -1,0 +1,15 @@
+# VERA Pipeline v4.2.1 — Dependencies
+# Requires Python >= 3.10
+
+# Core pipeline uses only Python standard library:
+#   hashlib, hmac, json, math, os, secrets, time, gc, datetime, typing
+# No external dependencies required.
+
+# Optional — for production deployment:
+# fastapi>=0.110.0        # API server
+# uvicorn>=0.29.0         # ASGI runner
+# python-dotenv>=1.0.0    # Environment variable management (VERA_RR_HMAC_KEY)
+
+# Optional — for audit/testing:
+# pytest>=8.0.0           # Test runner
+# scipy>=1.13.0           # Spearman correlation validation
