@@ -1,4 +1,4 @@
-VERA is a privacy-first protocol that transforms user signals into anonymous, irreversible statistics — with no accounts and no tracking. It ensures structural anonymity, fair redistribution for artists (+30% minimum), and provides ethically usable data for AI while minimizing energy consumption (Green IT# VERA — Privacy-First Music Data Compliance Protocol
+
 
 > **VERA produit des décisions exploitables sans jamais exposer de données individuelles.**
 
