@@ -1,0 +1,58 @@
+# Contributing to VERA
+
+VERA is an open protocol. Contributions, feedback, and pilot partnerships are welcome.
+
+---
+
+## 🎯 Looking for First Pilot Partners
+
+We are actively looking for **radio stations, music platforms, and distributors** to run a pilot integration.
+
+**What you get:**
+- Free integration support
+- Privacy-compliant listening signal pipeline (RGPD + AI Act ready)
+- Auditable proof via RFC3161 timestamping
+- Actionable insights without exposing individual user data
+
+**What we ask:**
+- Access to anonymized listening data (aggregated, no PII required)
+- Feedback on the protocol after 30 days
+
+📩 Contact: **tahahouari@hotmail.fr**
+
+---
+
+## 🛠 Technical Contributions
+
+If you want to contribute code:
+
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/your-feature`
+3. Run the pipeline: `python vera_pipeline_v4.py`
+4. Open a Pull Request with a clear description
+
+**Priority areas:**
+- Real RFC3161 TSA integration (replacing simulation)
+- FastAPI server wrapping the pipeline
+- Test coverage (`pytest`)
+- Spearman correlation validation (`scipy`)
+
+---
+
+## 🐛 Bug Reports
+
+Open an issue with:
+- Python version
+- Input data shape (no real data — synthetic only)
+- Expected vs actual output
+
+---
+
+## 📋 Code of Conduct
+
+Be direct. Be honest. No fake benchmarks.
+
+---
+
+*VERA — signal. pas données.*
+
