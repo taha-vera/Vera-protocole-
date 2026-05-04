@@ -57,3 +57,10 @@ VERA v2.7.1 implémente une differential privacy empirique avec ε
 non calibré formellement. Non-reconstructibilité mesurée à >=3.25%
 sur N=2000 simulations. Calibration formelle documentée dans
 PENDING_v3 — réalisée post-pilote Radio France.
+
+## 10. Hypothèses implicites GSTG v1
+- Single writer : une seule instance par état global
+- No pre-hashing fork : pas de duplication de flux avant intégration
+- Sequential transitions : pas de concurrence sur T()
+- T non compressive : deux historiques distincts produisent des états distincts
+- Résistance testée empiriquement — pas démontrée formellement
