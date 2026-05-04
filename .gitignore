@@ -1,0 +1,4 @@
+.vera_nav_key
+__pycache__/
+*.pyc
+*.png
