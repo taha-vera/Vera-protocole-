@@ -1,0 +1,866 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VERA Protocol — Privacy by Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #020408;
+    --dark: #080d14;
+    --panel: #0d1520;
+    --border: #1a2840;
+    --green: #00ff88;
+    --green-dim: #00cc6a;
+    --green-faint: rgba(0,255,136,0.06);
+    --blue: #0088ff;
+    --text: #c8dae8;
+    --muted: #4a6278;
+    --white: #eef4f8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* SCANLINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* NOISE TEXTURE */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 1.2rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(2,4,8,0.92);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--white);
+    letter-spacing: 0.15em;
+    text-decoration: none;
+  }
+
+  .nav-logo span { color: var(--green); }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--green); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8rem 3rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.3;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,136,0.04) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hero-tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .hero-tag::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--green);
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.4rem, 5vw, 4.5rem);
+    line-height: 1.08;
+    color: var(--white);
+    max-width: 800px;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+
+  .hero h1 .accent { color: var(--green); }
+
+  .hero-sub {
+    font-size: 0.9rem;
+    color: var(--muted);
+    max-width: 520px;
+    margin-bottom: 3rem;
+    line-height: 1.9;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    padding: 0.85rem 2rem;
+    background: var(--green);
+    color: var(--black);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .btn-primary:hover {
+    background: var(--white);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    padding: 0.85rem 2rem;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* METRICS BAR */
+  .metrics {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 3rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+
+  .metric {
+    text-align: center;
+    padding: 1rem;
+    border-right: 1px solid var(--border);
+  }
+
+  .metric:last-child { border-right: none; }
+
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.2rem;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+
+  .metric-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* SECTIONS */
+  section {
+    padding: 6rem 3rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-tag {
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .section-tag::before {
+    content: '//';
+    color: var(--muted);
+  }
+
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    color: var(--white);
+    margin-bottom: 1.5rem;
+    line-height: 1.15;
+  }
+
+  .lead {
+    font-size: 0.9rem;
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 3rem;
+    line-height: 1.9;
+  }
+
+  /* CONCEPT */
+  .concept-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    margin-top: 3rem;
+  }
+
+  .concept-card {
+    background: var(--dark);
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .concept-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--green);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .concept-card:hover::before { opacity: 1; }
+
+  .concept-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+    display: block;
+  }
+
+  .concept-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  .concept-card p {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* ARCHITECTURE */
+  .arch-section {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    padding: 4rem 3rem;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .arch-section section {
+    max-width: 1100px;
+  }
+
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 3rem 0;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+  }
+
+  .arch-node {
+    flex-shrink: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 1.5rem 1.8rem;
+    text-align: center;
+    min-width: 140px;
+    position: relative;
+    transition: border-color 0.3s;
+  }
+
+  .arch-node:hover { border-color: var(--green); }
+
+  .arch-node-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .arch-node-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--white);
+  }
+
+  .arch-node.highlight {
+    border-color: var(--green);
+    background: var(--green-faint);
+  }
+
+  .arch-node.highlight .arch-node-name { color: var(--green); }
+
+  .arch-arrow {
+    flex-shrink: 0;
+    width: 40px;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .arch-arrow::after {
+    content: '▶';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.5rem;
+    color: var(--muted);
+  }
+
+  /* PROOF BLOCK */
+  .proof-block {
+    background: var(--black);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    padding: 2rem 2.5rem;
+    margin-top: 3rem;
+    font-size: 0.72rem;
+    color: var(--text);
+    line-height: 2;
+    overflow-x: auto;
+  }
+
+  .proof-block .comment { color: var(--muted); }
+  .proof-block .key { color: var(--blue); }
+  .proof-block .value { color: var(--green); }
+  .proof-block .string { color: #ff9f43; }
+
+  /* CLAIMS */
+  .claims {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .claim {
+    padding: 2rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .claim::after {
+    content: attr(data-num);
+    position: absolute;
+    bottom: -0.5rem;
+    right: 1rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 4rem;
+    color: var(--border);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .claim-status {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .claim-status.ok { color: var(--green); }
+  .claim-status.ok::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .claim-status.pending { color: var(--muted); }
+  .claim-status.pending::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .claim h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.6rem;
+  }
+
+  .claim p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* QUOTE */
+  .quote-block {
+    margin: 4rem 0;
+    padding: 3rem;
+    background: var(--green-faint);
+    border: 1px solid rgba(0,255,136,0.15);
+    position: relative;
+  }
+
+  .quote-block::before {
+    content: '"';
+    position: absolute;
+    top: -1rem;
+    left: 2rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 6rem;
+    color: var(--green);
+    line-height: 1;
+    opacity: 0.3;
+  }
+
+  .quote-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.4;
+    margin-bottom: 1rem;
+  }
+
+  .quote-source {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--dark);
+  }
+
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--white);
+    letter-spacing: 0.15em;
+  }
+
+  .footer-logo span { color: var(--green); }
+
+  .footer-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .footer-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--green); }
+
+  .footer-copy {
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* DIVIDER */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ANIMATE */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .hero-tag, .hero h1, .hero-sub, .hero-cta {
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .hero h1 { animation-delay: 0.1s; }
+  .hero-sub { animation-delay: 0.2s; }
+  .hero-cta { animation-delay: 0.3s; }
+
+  .blink {
+    animation: pulse 1.4s ease infinite;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .hero { padding: 7rem 1.5rem 3rem; }
+    .metrics { grid-template-columns: repeat(2, 1fr); padding: 2rem 1.5rem; }
+    .metric { border-right: none; border-bottom: 1px solid var(--border); }
+    section { padding: 4rem 1.5rem; }
+    .concept-grid { grid-template-columns: 1fr; }
+    .claims { grid-template-columns: 1fr; }
+    .arch-section { padding: 3rem 1.5rem; }
+    footer { flex-direction: column; gap: 1.5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">VERA<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#concept">Concept</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#garanties">Garanties</a></li>
+    <li><a href="https://github.com/taha-vera/Vera-protocole-" target="_blank">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <div class="hero-tag">
+    <span class="blink">●</span> VERA Protocol — v2.7.1 — Mai 2026
+  </div>
+
+  <h1>
+    Les signaux audio<br>
+    <span class="accent">exploitables.</span><br>
+    Les individus<br>protégés.
+  </h1>
+
+  <p class="hero-sub">
+    Middleware de confidentialité différentielle pour plateformes de streaming audio.
+    Chaque session génère un certificat cryptographique exportable.
+    Privacy by architecture — pas par promesse.
+  </p>
+
+  <div class="hero-cta">
+    <a href="https://github.com/taha-vera/Vera-protocole-" target="_blank" class="btn-primary">
+      Voir le code source
+    </a>
+    <a href="#concept" class="btn-secondary">
+      En savoir plus
+    </a>
+  </div>
+</div>
+
+<!-- METRICS -->
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-value">2.88%</div>
+    <div class="metric-label">Plancher de reconstruction empirique (N=5000)</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">ε=1.0</div>
+    <div class="metric-label">Budget de confidentialité différentielle</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">32/32</div>
+    <div class="metric-label">Tests verts — Core v2.7.1</div>
+  </div>
+  <div class="metric">
+    <div class="metric-value">0</div>
+    <div class="metric-label">Dépendance externe — code autonome</div>
+  </div>
+</div>
+
+<!-- CONCEPT -->
+<section id="concept">
+  <div class="section-tag">01 — Concept</div>
+  <h2>Privacy by architecture,<br>pas par déclaration.</h2>
+  <p class="lead">
+    VERA ne promet pas la confidentialité — il la rend architecturalement impossible à contourner.
+    Les données brutes sont détruites immédiatement. Seuls des agrégats mathématiquement bruités survivent.
+  </p>
+
+  <div class="quote-block">
+    <p class="quote-text">
+      Bitcoin a rendu la valeur vérifiable sans identité.<br>
+      VERA rend les signaux exploitables sans exposition des individus.
+    </p>
+    <p class="quote-source">— Positionnement VERA Protocol</p>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <span class="concept-icon">⬡</span>
+      <h3>Destruction irréversible</h3>
+      <p>Les données audio brutes ne sont jamais stockées ni transmises. Seuls des agrégats statistiques bruités survivent au pipeline.</p>
+    </div>
+    <div class="concept-card">
+      <span class="concept-icon">◈</span>
+      <h3>Bruit Laplace calibré</h3>
+      <p>Mécanisme ε-DP avec bruit de Laplace sur chaque valeur agrégée. Budget fini par session — non contournable par construction.</p>
+    </div>
+    <div class="concept-card">
+      <span class="concept-icon">⬡</span>
+      <h3>Audit cryptographique</h3>
+      <p>Chaîne d'audit Ed25519 + ancrage RFC3161 FreeTSA. Chaque transition est vérifiable sans accès au système.</p>
+    </div>
+    <div class="concept-card">
+      <span class="concept-icon">◈</span>
+      <h3>Certificat par session</h3>
+      <p>VERA Causal Proof génère un document JSON signé attestant du plancher de reconstruction empirique pour chaque session.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ARCHITECTURE -->
+<div class="arch-section" id="architecture">
+  <section style="max-width:1100px;margin:0 auto;">
+    <div class="section-tag">02 — Architecture</div>
+    <h2>Global State Transition Graph.</h2>
+    <p class="lead">
+      Un seul état global immuable. Une seule fonction de transition.
+      NAV + DP + Audit dans la même dynamique atomique.
+    </p>
+
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="arch-node-label">Entrée</div>
+        <div class="arch-node-name">Signal audio</div>
+      </div>
+      <div class="arch-arrow"></div>
+      <div class="arch-node">
+        <div class="arch-node-label">Gateway</div>
+        <div class="arch-node-name">Normalisation</div>
+      </div>
+      <div class="arch-arrow"></div>
+      <div class="arch-node highlight">
+        <div class="arch-node-label">Core v2.7.1</div>
+        <div class="arch-node-name">DP + NAV</div>
+      </div>
+      <div class="arch-arrow"></div>
+      <div class="arch-node highlight">
+        <div class="arch-node-label">GSTG v1</div>
+        <div class="arch-node-name">Transition atomique</div>
+      </div>
+      <div class="arch-arrow"></div>
+      <div class="arch-node">
+        <div class="arch-node-label">Output</div>
+        <div class="arch-node-name">Agrégat + Preuve</div>
+      </div>
+    </div>
+
+    <p style="font-size:0.72rem;color:var(--muted);margin-bottom:2rem;">
+      Exemple de certificat VERA Causal Proof — exportable, vérifiable sans accès au système :
+    </p>
+
+    <div class="proof-block">
+<span class="comment">// VERA Causal Proof v1.0 — document opposable RGPD par session</span>
+{
+  <span class="key">"proof_id"</span>:               <span class="string">"f0b287eb8fdb"</span>,
+  <span class="key">"session_id"</span>:             <span class="string">"radio_session_1"</span>,
+  <span class="key">"epsilon"</span>:                <span class="value">1.0</span>,
+  <span class="key">"reconstruction_floor_pct"</span>: <span class="value">6.98</span>,
+  <span class="key">"reconstruction_n"</span>:       <span class="value">500</span>,
+  <span class="key">"gstg_fingerprint"</span>:       <span class="string">"4fd4355a284f4d4a"</span>,
+  <span class="key">"proof_hash"</span>:             <span class="string">"94fe3cad..."</span>,
+  <span class="key">"human_readable"</span>: {
+    <span class="key">"claim"</span>: <span class="string">"Signal traité avec ε=1.0. Reconstruction maximale mesurée : 6.98%
+             sur 500 observations. Non calibré formellement — borne empirique."</span>,
+    <span class="key">"rgpd_status"</span>: <span class="string">"Donnée individuelle non-reconstructible empiriquement"</span>
+  }
+}
+    </div>
+  </section>
+</div>
+
+<!-- GARANTIES -->
+<section id="garanties">
+  <div class="section-tag">03 — Garanties</div>
+  <h2>Ce qui est garanti.<br>Ce qui est assumé.</h2>
+  <p class="lead">
+    VERA est honnête sur ses limites. Chaque contrainte est documentée,
+    chaque invariant est testé, chaque limite est assumée publiquement.
+  </p>
+
+  <div class="claims">
+    <div class="claim" data-num="01">
+      <div class="claim-status ok">Garanti — 32/32 tests</div>
+      <h3>Destruction des données brutes</h3>
+      <p>Aucune donnée brute stockée ou transmise. Destruction irréversible post-agrégation — INV-7.</p>
+    </div>
+    <div class="claim" data-num="02">
+      <div class="claim-status ok">Garanti — ε ≤ 1.5</div>
+      <h3>Budget DP fini par session</h3>
+      <p>Budget epsilon borné et non contournable. Kill-switch automatique sur violation — INV-4.</p>
+    </div>
+    <div class="claim" data-num="03">
+      <div class="claim-status ok">Mesuré — 2.88% plancher</div>
+      <h3>Non-reconstructibilité empirique</h3>
+      <p>Plancher de reconstruction stable à 2.88% sur N=5000 sessions sous attaquant white-box.</p>
+    </div>
+    <div class="claim" data-num="04">
+      <div class="claim-status ok">Vérifiable — RFC3161</div>
+      <h3>Audit cryptographique</h3>
+      <p>Chaîne d'audit horodatée et vérifiable par tout tiers sans accès au système.</p>
+    </div>
+    <div class="claim" data-num="05">
+      <div class="claim-status pending">Post-pilote</div>
+      <h3>Calibration formelle ε</h3>
+      <p>Sensibilité Δf et calibration formelle du bruit Laplace — après pilote Radio France.</p>
+    </div>
+    <div class="claim" data-num="06">
+      <div class="claim-status pending">Post-pilote</div>
+      <h3>Composition cross-branches</h3>
+      <p>Budget DP partagé Radio/Artist/Edge — VERABudgetManager en PENDING_v3.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">VERA<span>.</span></div>
+  <ul class="footer-links">
+    <li><a href="https://github.com/taha-vera/Vera-protocole-" target="_blank">GitHub</a></li>
+    <li><a href="mailto:tahahouari@hotmail.fr">Contact</a></li>
+  </ul>
+  <p class="footer-copy">© 2026 VERA Protocol — tahahouari@hotmail.fr</p>
+</footer>
+
+</body>
+</html>
+
