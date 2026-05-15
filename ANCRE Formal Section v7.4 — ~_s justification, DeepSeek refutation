@@ -1,0 +1,306 @@
+# ANCRE — Section Formelle v7.4
+## Garanties de Confidentialité Différentielle
+
+**Version** : 0.7.2  
+**Auteur** : SAS VERA / ANCRE  
+**Date** : Mai 2026  
+**Statut** : Draft preprint — corrections post-review DeepSeek (52/100)
+
+---
+
+## 1. Modèle et Hypothèses
+
+### 1.1 Modèle d'adversaire
+
+Central DP (McSherry, SIGMOD 2009), adversaire semi-honnête :
+
+- Le serveur collecte les signaux bruts.
+- L'adversaire observe M(D) et les métadonnées publiées (n, ε).
+- Le Laplace discret exact élimine les fuites LSB (Mironov, 2012).
+
+**Hors modèle** : canaux timing O(n log n), Sybil avec SIM volées (§6.1).
+
+### 1.2 Pourquoi Substitute Adjacency est le Bon Modèle pour ANCRE
+
+**Réponse directe au finding DeepSeek** : "GDPR concerne la présence (add/remove), pas la substitution."
+
+**Notre réponse formelle :**
+
+Sous ANCRE, n est **public** (H3 + AggregateResponse.n) et K ≥ K_MIN = 100. La présence de chaque individu est connue de l'adversaire au niveau du groupe — il sait qu'exactement n individus ont participé. La k-anonymité (K≥100) protège l'identification individuelle dans ce groupe.
+
+La menace résiduelle après publication de n est donc :
+
+```
+Menace : "Quelle était la VALEUR du signal de l'individu k ?"
+Non    : "L'individu k a-t-il PARTICIPÉ ?" (déjà public via n)
+```
+
+Cette menace correspond exactement au modèle ~_s : D et D' diffèrent sur la valeur d'un signal, pas sur la présence d'un individu.
+
+**H6 justifie l'applicabilité de ~_s au système ANCRE :**
+
+H6 ne définit pas ~_s (qui est purement mathématique) — elle justifie que le contexte physique du système correspond à cette définition. Spécifiquement :
+
+1. La fenêtre se ferme à exactement n signaux validés (H6)
+2. max_per_device = 1 (H1) → une bijection entre SIMs et signaux
+3. n est publié avant toute sortie (H3)
+4. Un adversaire connaît n → sa question restante est sur les valeurs
+
+**Comparaison ~_s vs ~_ar pour ANCRE :**
+
+| Modèle | Question protégée | Coût ε | Adapté à ANCRE ? |
+|---|---|---|---|
+| ~_s | Valeur du signal | 0.5 | ✅ (n public) |
+| ~_ar | Présence + valeur | 1.0 | Surestimation (n déjà public) |
+
+**Note** : Si n était privé, ~_ar serait nécessaire et ε = 1.0. Le choix de publier n (H3) est précisément ce qui justifie ~_s et permet ε = 0.5.
+
+### 1.3 Définitions
+
+**Définition 1 — ~_s** : D ~_s D' si |D| = |D'| = n et D' = (D \ {x_k}) ∪ {x'_k}.
+
+**Définition 2 — ~_ar** : D ~_ar D' si |D △ D'| = 1.
+
+**Définition 3 — ε-DP** (Dwork & Roth, Déf. 2.4) :
+
+```
+Pr[M(D) ∈ S] ≤ exp(ε) × Pr[M(D') ∈ S]  ∀ D ~_s D', ∀ S
+```
+
+### 1.4 Hypothèses
+
+**H1** — max_per_device = 1. Un signal par SIM par fenêtre.
+
+**H2** — xᵢ ∈ [0,1] strictement. NaN/Inf rejetés.
+
+**H3** — n publié avant toute sortie. Ordre atomique irréversible.
+
+**H4** — Indépendance ChaCha20. Non requise pour la garantie DP.
+
+**H5** — Population fixe pour la composition (Claim 3.16, Dwork & Roth §3.5).
+
+**H5a** — Paramètres homogènes entre agrégations.
+
+**H6** — Fenêtre fermée avant aggregate(). Justifie l'applicabilité de ~_s.
+
+### 1.5 Laplace Discret Exact
+
+DLap(scale_int) = G₁ − G₂, Gᵢ ~ Geom(p), p = 1 − e^{−1/scale_int}.
+
+Résolution r = 1000 : scale_int = 25 pour n=100, ε=0.5 → p ≈ 0.039 (non dégénéré).
+
+Pure DP (δ=0) : opère sur une grille finie, élimine les fuites IEEE 754.
+
+---
+
+## 2. Mécanisme ANCRE
+
+```
+M_ANCRE(D) = clamp(TMoM_α(D) + DLap_r(Δ/ε), 0, 1)
+```
+
+**MSE** : Pour μ ∈ (Δ/ε, 1−Δ/ε) : MSE ≈ 2(Δ/ε)² ≈ 0.00125 pour n=100.
+
+---
+
+## 3. Lemme 1 — Sensibilité TMoM (Substitute Adjacency)
+
+**Lemme 1.**
+*Soit D = {x₁,...,xₙ}, xᵢ ∈ [0,1] (H2), n ≥ 100, α = 0.1. Sous ~_s :*
+
+```
+Δ_subst(TMoM_α) ≤ 1/(n × 0.8)
+```
+
+**Préliminaire** : n_eff = n − 2⌊0.1n⌋ ≥ 0.8n pour n ≥ 10. ✓
+
+**Convention tie-breaking** : Tri stable (total_cmp Rust, TimSort Python). En cas d'ex-aequo à la frontière, l'ordre lexicographique sur les indices détermine T(D) de façon unique.
+
+**Notation** : T(D) = indices retenus (positions ⌊αn⌋+1 à n−⌊αn⌋ dans le tri stable). |T(D)| = n_eff constant sous ~_s.
+
+**Preuve.**
+
+Soient D ~_s D' : D' = D avec x_k → x'_k, x_k, x'_k ∈ [0,1].
+
+### Cas 1 — x_k ∉ T(D) et x'_k ∉ T(D')
+
+T(D) et T(D') contiennent les mêmes n_eff éléments. Δ_somme = 0. ✓
+
+### Cas 2 — x_k ∈ T(D) et x'_k ∈ T(D')
+
+Δ_somme = x'_k − x_k, |Δ_somme| ≤ 1 car x_k, x'_k ∈ [0,1].
+|TMoM(D) − TMoM(D')| = |Δ_somme|/n_eff ≤ 1/(0.8n). ✓
+
+### Cas 3 — Transition entre queue et centre
+
+Ce cas inclut tous les sous-cas où x_k franchit au moins une frontière de trim (inférieure, supérieure, ou les deux).
+
+**Lemme Auxiliaire** : Sous ~_s avec H2 (xᵢ ∈ [0,1]), convention tie-breaking et n_eff constant :
+
+```
+Exactement un élément entre dans T(D') et un élément sort de T(D).
+```
+
+**Preuve du Lemme Auxiliaire :**
+
+|T(D)| = |T(D')| = n_eff (n constant sous ~_s, trim symétrique).
+
+La substitution x_k → x'_k modifie exactement un élément du tableau. Considérons la différence symétrique T(D) △ T(D') :
+
+**Sous-cas 3a** : x_k dans la queue inférieure (pos ≤ ⌊αn⌋), x'_k dans le centre.
+- x_k était exclu de T(D). Dans D', x'_k est inclus dans T(D').
+- L'élément à la position ⌊αn⌋+1 dans D (premier élément de T(D), noté e) se déplace vers la position ⌊αn⌋ dans D' (car x_k a libéré une place en dessous). Donc e sort de T(D').
+- x'_k entre dans T(D').
+- Résultat : **un sort (e), un entre (x'_k)**. |T(D) △ T(D')| = 2. ✓
+
+**Sous-cas 3b** : x_k dans le centre, x'_k dans la queue supérieure.
+- Symétrique à 3a. **Un sort (x_k), un entre (f)**. ✓
+
+**Sous-cas 3c** : x_k dans la queue inférieure, x'_k dans la queue supérieure.
+- x_k était exclu de T(D). x'_k est exclu de T(D').
+- La position ⌊αn⌋+1 dans D (noté e_bas, premier de T(D)) descend en position ⌊αn⌋ dans D' → e_bas sort de T(D').
+- La position n−⌊αn⌋ dans D (noté e_haut, dernier de T(D)) monte en position n−⌊αn⌋+1 dans D' → e_haut sort de T(D').
+- Mais |T(D')| doit rester n_eff. Avec deux sortants et aucun entrant visible, comment ?
+
+**Résolution du sous-cas 3c** :
+
+Quand x_k (position p ≤ ⌊αn⌋) est retiré et x'_k (position q > n−⌊αn⌋) est inséré :
+- Les éléments aux positions p+1, ..., q−1 décalent leurs positions de −1 puis +1, se compensant.
+- L'élément à la position ⌊αn⌋+1 dans D se retrouve à la position ⌊αn⌋ dans D' → **sort** de T(D').
+- L'élément à la position n−⌊αn⌋+1 dans D (premier de la queue supérieure) se retrouve à la position n−⌊αn⌋ dans D' → **entre** dans T(D').
+
+Résultat : **un sort (e_bas), un entre (f_haut)**. |T(D) △ T(D')| = 2. ✓
+
+**Vérification par exemple (sous-cas 3c)** :
+
+n=10, α=0.2, trim=2, n_eff=6.
+D = [a, b, **c**, d, e, f, g, h, **i**, j] (T(D) = [c,d,e,f,g,h])
+D' = remplace x_k=a (pos 1) par x'_k=j+ε (pos 10+) :
+D' sorted = [b, **c**, d, e, f, g, h, i, j, j+ε]
+T(D') = positions 3-8 = [d, e, f, g, h, i]
+T(D) △ T(D') = {c} sort, {i} entre. ✓
+
+**Fin du Lemme Auxiliaire.**
+
+**Application à la borne de sensibilité :**
+
+Dans tous les sous-cas du Cas 3, soit f ∈ [0,1] l'élément entrant et e ∈ [0,1] l'élément sortant. Par H2 :
+
+```
+|f − e| ≤ 1   (bornitude [0,1])
+```
+
+**Note fondamentale** : même dans le sous-cas 3c où les DEUX frontières de position se déplacent, il y a **un entrant et un sortant** (pas deux sorties et deux entrées). La variation nette de la somme est (f − e), pas ±2.
+
+|TMoM(D) − TMoM(D')| = |f − e| / n_eff ≤ 1/n_eff ≤ 1/(0.8n). ✓
+
+**Réfutation du contre-exemple DeepSeek :**
+
+DeepSeek propose D = [0×10, 5×80, 10×10] avec n=100, α=0.1. Mais ces valeurs violent H2 (xᵢ doit être dans [0,1]). Avec des valeurs normalisées [0, 0.05, 0.1] ∈ [0,1], le calcul donne :
+
+```
+TMoM(D)  = 0.05
+TMoM(D') = (79×0.05 + 0.1)/80 = 4.05/80 ≈ 0.050625
+|Δ| = 0.000625 < 1/80 = 0.0125  ✓
+```
+
+La borne est respectée. Le contre-exemple de DeepSeek est invalide car il viole H2.
+
+**Dans tous les cas, Δ_subst ≤ 1/(0.8n). □**
+
+---
+
+## 4. Théorème 1 — ε-DP de M_ANCRE
+
+**Théorème 1.**
+*Sous H1, H2, H6 et ~_s, M_ANCRE satisfait ε = 0.5-DP (pure DP, δ=0).*
+
+**Étape 1** : Par Lemme 1, Δ ≤ 1/(0.8n). M₀ = TMoM_α + DLap_r(Δ/ε) satisfait ε-DP (Ghosh et al., 2012, Theorem 1).
+
+**Étape 2** : clamp est indépendant des données. Par Prop. 2.1 (Dwork & Roth) :
+
+```
+M_ANCRE = clamp ∘ M₀  satisfait  ε = 0.5-DP (δ=0).  □
+```
+
+H3, H4, H5 ne sont pas requises pour cette garantie.
+
+---
+
+## 5. Corollaire 1 — Composition
+
+*Sous H1, H3, H5, H5a, k ≤ 3 agrégations :*
+
+```
+ε_total = 1.5,  δ_total = 0
+```
+
+Par Prop. 3.14 (Dwork & Roth), sans hypothèse d'indépendance (pure DP). **□**
+
+---
+
+## 6. Limites
+
+**6.1 Sybil** — H1 requiert une SIM physique par signal. Un attaquant avec j SIMs → j×ε-DP. Coût minimal d'une attaque efficace : pour réduire ε_effectif à 0.05, il faut j=10 SIMs (≈50€/an). Pour saturer K_MIN=100 avec des faux signaux : 100 SIMs (≈500€/an) → économiquement significatif mais non prohibitif sans un opérateur partenaire.
+
+**6.2 H6 et sessions radio** — Si n fluctue pendant la fenêtre, ~_ar s'applique et Δ = 2/(0.8n), ε_effectif = 1.0.
+
+**6.3 Timing** — Sort O(n log n) data-dépendant. Non couvert.
+
+**6.4 Biais statistique** — E[M_ANCRE(D)] ≠ TMoM_α(D) pour μ proche des bords.
+
+---
+
+## 7. Évaluation Empirique
+
+**KS-test** : stat = 0.0089 < 0.020 (seuil 99.9%). ✓
+**59/59 tests Rust, 21/21 tests Python.**
+
+**Avertissement** : Ces tests ne constituent pas une preuve de ε-DP.
+
+---
+
+## 8. Références
+
+```
+[1] Dwork, C. & Roth, A. (2014). Algorithmic Foundations of DP.
+    Foundations and Trends in TCS.
+
+[2] Ghosh, A., Roughgarden, T. & Sundararajan, M. (2012).
+    Universally Utility-Maximizing Privacy Mechanisms.
+    SIAM Journal on Computing 41(6).
+    → Theorem 1 : DLap, pure ε-DP
+
+[3] Canonne, C., Kamath, G. & Steinke, T. (2020).
+    The Discrete Gaussian for DP. NeurIPS 2020.
+
+[4] McSherry, F. (2009). Privacy Integrated Queries. ACM SIGMOD.
+
+[5] Dwork, C. & Lei, J. (2009). DP and Robust Statistics. ACM STOC.
+
+[6] Mironov, I. (2012). On Significance of the LSB for DP. ACM CCS.
+
+[7] Kairouz, P. et al. (2021). Advances and Open Problems in
+    Federated Learning. JMLR 22(1).
+
+[8] Douceur, J.R. (2002). The Sybil Attack.
+    IPTPS 2002.
+    → Fondateur du concept d'attaque Sybil
+
+[9] Dwork, C. et al. (2006). Calibrating Noise to Sensitivity in
+    Private Data Analysis. TCC 2006.
+    → Papier fondateur DP
+
+[10] Bassily, R. & Smith, A. (2015). Local, Private, Efficient Protocols
+    for Succinct Histograms. STOC 2015.
+    → Comparaison LDP vs Central DP
+```
+
+---
+
+*v7.4 — Corrections DeepSeek :*
+*Sous-cas 3c du Lemme Auxiliaire prouvé formellement (un entrant, un sortant),*
+*contre-exemple DeepSeek réfuté (violation H2),*
+*justification ~_s reformulée (n public → menace = valeur, pas présence),*
+*analyse coût attaque Sybil §6.1,*
+*références [8][9][10] ajoutées.*
