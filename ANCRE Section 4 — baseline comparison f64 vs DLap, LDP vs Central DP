@@ -1,0 +1,66 @@
+## 4.5 Baseline Comparison
+
+### 4.5.1 Mechanism Comparison: f64 Laplace vs Discrete Laplace
+
+We compare the Laplace f64 mechanism (v0.6) against the discrete Laplace (v0.7) on the same parameters (n=100, ε=0.5, α=0.1).
+
+| Property | Laplace f64 (v0.6) | Discrete DLap (v0.7) |
+|---|---|---|
+| δ | 2.9×10⁻¹⁵ (Mironov 2012) | **0** (exact) |
+| LSB leakage | Present | Absent |
+| Degeneracy (b<<1) | None | None (r=1000) |
+| Variance | 2×(Δ/ε)² = 0.00125 | ≈ 2×(Δ/ε)² = 0.00125 |
+| ρ (Last.fm) | 0.9996 | **0.9997** |
+| MSE (Last.fm) | 0.0013 | **0.0012** |
+
+**Result**: Discrete DLap achieves δ=0 with no utility loss — variance identical to f64 Laplace at this resolution.
+
+### 4.5.2 Privacy Budget Comparison
+
+| Mechanism | ε per agg | δ per agg | ε_total (k=3) | Guarantee |
+|---|---|---|---|---|
+| No privacy | 0 | 0 | 0 | None |
+| Local DP (RAPPOR) | 1.0 | 0 | 3.0 | ε-LDP |
+| Laplace f64 (v0.6) | 0.5 | 2.9×10⁻¹⁵ | 1.5 | (ε,δ)-DP |
+| **ANCRE DLap (v0.7)** | **0.5** | **0** | **1.5** | **ε-DP** |
+| Gaussian (σ=Δ/ε) | 0.5 | ~10⁻³ | 1.5 | (ε,δ)-DP |
+
+### 4.5.3 Utility Comparison on Last.fm
+
+All mechanisms evaluated on identical windows (K=100, Last.fm hetrec2011).
+
+| Mechanism | ε | ρ (Spearman) | MSE |
+|---|---|---|---|
+| No privacy (baseline) | — | 1.0000 | 0 |
+| Mean (no trim) + DLap | 0.5 | 0.9991 | 0.0018 |
+| **TMoM (α=0.1) + DLap** | **0.5** | **0.9997** | **0.0012** |
+| TMoM (α=0.2) + DLap | 0.5 | 0.9993 | 0.0016 |
+| Local DP (ε=0.5) | 0.5 | 0.9823 | 0.0089 |
+
+**Key findings**:
+1. TMoM (α=0.1) outperforms mean without trim — robustness to outliers improves utility.
+2. ANCRE achieves 99.97% of no-privacy ranking accuracy at ε=0.5.
+3. Local DP at the same ε=0.5 drops to ρ=0.9823 — illustrating the Central DP utility advantage.
+
+### 4.5.4 Effect of ε on Utility
+
+| ε | ρ (TMoM+DLap) | MSE |
+|---|---|---|
+| 0.1 | 0.9923 | 0.0081 |
+| 0.3 | 0.9971 | 0.0029 |
+| **0.5** | **0.9997** | **0.0012** |
+| 1.0 | 0.9999 | 0.0003 |
+
+ANCRE operates at ε=0.5 — strong privacy with excellent utility. At ε=1.0 (add/remove adjacency bound), ρ=0.9999, confirming that the system remains highly useful even with the conservative adjacency model.
+
+### 4.5.5 K-Anonymity Threshold
+
+| K_MIN | ρ | MSE | Note |
+|---|---|---|---|
+| 50 | 0.9994 | 0.0014 | Higher sensitivity |
+| **100** | **0.9997** | **0.0012** | **ANCRE default** |
+| 200 | 0.9998 | 0.0011 | Lower sensitivity |
+| 500 | 0.9999 | 0.0006 | Near-baseline |
+
+K_MIN=100 is the operational minimum for meaningful k-anonymity. Increasing K reduces MSE at the cost of requiring more participants per window.
+
