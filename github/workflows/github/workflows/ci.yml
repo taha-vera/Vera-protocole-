@@ -1,0 +1,20 @@
+name: Test NAV
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test AggregationWindow
+        run: python3 nav_window.py
+      - name: Test NAVBuffer
+        run: python3 nav_buffer.py
+      - name: Test VERA-D
+        run: python3 vera_d.py
