@@ -1,0 +1,48 @@
+name: Test NAV
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Test AggregationWindow
+        run: |
+          python3 -c "
+          from nav_window import AggregationWindow
+          from datetime import datetime
+          w = AggregationWindow()
+          w.open_window()
+          w.add_point(datetime.now(), 42.0)
+          data = w.close_window()
+          print('✅ Window test OK')
+          print(f'Points: {data[\"points_count\"]}')
+          "
+      
+      - name: Test NAVBuffer
+        run: |
+          python3 -c "
+          from nav_buffer import NAVBuffer
+          from nav_window import AggregationWindow
+          from datetime import datetime
+          w = AggregationWindow()
+          w.open_window()
+          w.add_point(datetime.now(), 42.0)
+          data = w.close_window()
+          b = NAVBuffer()
+          seq = b.commit_window(data)
+          ok, msg = b.verify_integrity(seq)
+          assert ok, msg
+          print('✅ Buffer test OK')
+          print(f'Seq #{seq} — {msg}')
+          "
