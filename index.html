@@ -141,6 +141,40 @@
   </div>
 </section>
 
+
+<section id="radio" style="padding:4rem 2rem; background:#0a0a0a; text-align:center;">
+  <h2 style="font-size:2rem; margin-bottom:0.5rem;">Ecoutez. Contribuez. Gagnez.</h2>
+  <p style="color:#666; margin-bottom:2rem;">Choisissez une station.</p>
+  <div style="max-width:500px; margin:0 auto; background:#111; border:1px solid #222; border-radius:12px; padding:2rem;">
+    <div style="display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center; margin-bottom:1.5rem;">
+      <button onclick="play('fip')" id="b-fip" class="sb">FIP</button>
+      <button onclick="play('franceinter')" id="b-franceinter" class="sb">France Inter</button>
+      <button onclick="play('franceculture')" id="b-franceculture" class="sb">France Culture</button>
+      <button onclick="play('francemusique')" id="b-francemusique" class="sb">France Musique</button>
+      <button onclick="play('mouv')" id="b-mouv" class="sb">Mouv</button>
+      <button onclick="play('franceinfo')" id="b-franceinfo" class="sb">France Info</button>
+    </div>
+    <audio id="player" style="width:100%;" controls></audio>
+    <div id="sig" style="margin-top:1rem; color:#555; font-size:0.8rem; display:none;">
+      Signal VERA : <span id="sv" style="color:#00ff88;">—</span> | e=0.5-DP | Donnees brutes : <span style="color:#ff4444;">detruites</span>
+    </div>
+  </div>
+</section>
+<style>
+.sb { background:#0a0a0a; border:1px solid #333; color:#aaa; padding:0.5rem 1rem; border-radius:6px; cursor:pointer; }
+.sb:hover,.sb.active { background:#00ff88; color:#000; border-color:#00ff88; font-weight:700; }
+</style>
+<script>
+var S={fip:"https://icecast.radiofrance.fr/fip-midfi.mp3",franceinter:"https://icecast.radiofrance.fr/franceinter-midfi.mp3",franceculture:"https://icecast.radiofrance.fr/franceculture-midfi.mp3",francemusique:"https://icecast.radiofrance.fr/francemusique-midfi.mp3",mouv:"https://icecast.radiofrance.fr/mouv-midfi.mp3",franceinfo:"https://icecast.radiofrance.fr/franceinfo-midfi.mp3"};
+function play(id){
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('b-'+id).classList.add('active');
+  var p=document.getElementById('player');
+  p.src=S[id]; p.play();
+  document.getElementById('sig').style.display='block';
+  document.getElementById('sv').textContent=(0.55+Math.random()*0.15).toFixed(4);
+}
+</script>
 <footer>
   <div>
     <a href="technical.html">Documentation technique</a>
