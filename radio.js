@@ -1,33 +1,60 @@
+const fileInput = document.getElementById('audioFile');
+const audio = document.getElementById('audio');
+const signal = document.getElementById('signal');
+const status = document.getElementById('status');
+
+let ctx;
+let analyser;
+
 function updateSignal(v) {
-  document.getElementById('signal').textContent =
-    v.toFixed(3);
+  signal.textContent = v.toFixed(3);
 }
 
-function startSimulation() {
-  document.getElementById('status').textContent =
-    'SIMULATION MODE';
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
 
-  setInterval(() => {
-    const t = Date.now() / 1000;
+  if (!file) return;
 
-    const s =
-      0.45 +
-      0.15 * Math.sin(t / 4) +
-      0.05 * Math.random();
+  const url = URL.createObjectURL(file);
 
-    updateSignal(
-      Math.max(0, Math.min(1, s))
-    );
-  }, 120);
-}
+  audio.src = url;
 
-function openRadio() {
-  window.open(
-    'https://www.radiofrance.fr/fip',
-    '_blank'
-  );
-}
+  if (!ctx) {
+    ctx = new AudioContext();
 
-window.openRadio = openRadio;
+    const src = ctx.createMediaElementSource(audio);
 
-startSimulation();
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+
+    src.connect(analyser);
+    analyser.connect(ctx.destination);
+  }
+
+  await audio.play();
+
+  status.textContent = 'LIVE ANALYSIS';
+
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  function tick() {
+    if (audio.paused) return;
+
+    analyser.getByteFrequencyData(data);
+
+    let sum = 0;
+
+    for (let i = 0; i < data.length; i++) {
+      sum += data[i];
+    }
+
+    const vera =
+      (sum / data.length) / 255;
+
+    updateSignal(vera);
+
+    requestAnimationFrame(tick);
+  }
+
+  tick();
+});

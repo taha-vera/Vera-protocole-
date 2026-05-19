@@ -209,6 +209,37 @@ color:white;
 </button>
 </div>
 
+
+<div style="margin:40px auto;text-align:center">
+
+<h3>🎵 Analyse audio locale</h3>
+
+<input
+  type="file"
+  id="audioFile"
+  accept="audio/*"
+  style="margin:20px"
+/>
+
+<br>
+
+<audio
+  id="audio"
+  controls
+  style="width:90%;max-width:520px"
+></audio>
+
+<p id="status">WAITING AUDIO</p>
+
+<h2 id="signal">0.000</h2>
+
+<p style="opacity:.7">
+Analyse locale via WebAudio API.<br>
+Aucune donnée audio ne quitte votre appareil.
+</p>
+
+</div>
+
 </body>
 
 </html>
