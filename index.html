@@ -154,7 +154,7 @@
       <button onclick="play('mouv')" id="b-mouv" class="sb">Mouv</button>
       <button onclick="play('franceinfo')" id="b-franceinfo" class="sb">France Info</button>
     </div>
-    <audio id="player" style="width:100%;" controls></audio>
+    <p id="player" style="color:#555; font-size:0.8rem; text-align:center;">↑ Cliquez sur une station pour écouter dans un nouvel onglet</p>
     <div id="sig" style="margin-top:1rem; color:#555; font-size:0.8rem; display:none;">
       Signal VERA : <span id="sv" style="color:#00ff88;">—</span> | e=0.5-DP | Donnees brutes : <span style="color:#ff4444;">detruites</span>
     </div>
@@ -169,8 +169,7 @@ var S={fip:"https://icecast.radiofrance.fr/fip-midfi.mp3",franceinter:"https://i
 function play(id){
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('active')});
   document.getElementById('b-'+id).classList.add('active');
-  var p=document.getElementById('player');
-  p.src=S[id]; p.play().catch(function(){window.open(S[id],'_blank');});
+  window.open(S[id],'_blank');
   document.getElementById('sig').style.display='block';
   document.getElementById('sv').textContent=(0.55+Math.random()*0.15).toFixed(4);
 }
